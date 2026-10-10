@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101a35"><title>Desafio dos Copos</title>
+<style>
+:root{--navy:#101a35;--blue:#355fe8;--gold:#ffd166;--bg:#f2f5fc;--green:#14804a;--red:#b72d42}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#18213a}
+header{background:linear-gradient(145deg,#101a35,#355fe8);color:white;text-align:center;padding:24px 16px 28px}
+header .mark{font-size:2.7rem}h1{font-size:1.7rem;margin:4px 0}header p{margin:5px 0 0;opacity:.9}
+main{max-width:680px;margin:auto;padding:14px}.panel{background:white;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 6px 22px #14213d12}
+label{display:block;font-weight:750;font-size:.9rem;margin-bottom:6px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input{width:100%;border:1px solid #cbd4e5;border-radius:11px;padding:12px;font-size:1rem;background:white}
+button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:13px;cursor:pointer;touch-action:manipulation}
+.primary{background:var(--blue);color:white;width:100%;margin-top:12px}.secondary{background:#e9eefb;color:#20345f}.small{padding:9px 12px;font-size:.9rem}
+.hint{font-size:.9rem;color:#5d6880;line-height:1.45;margin-bottom:0}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.status{font-weight:800;margin:12px 0;color:#27385f}
+.cups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.cup{background:linear-gradient(155deg,#fff,#e2eaff);border:2px solid #cbd8f6;border-bottom:5px solid #aabce8;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#20345f;transition:transform .12s}
+.cup:active:not(:disabled){transform:scale(.96)}.cup .emoji{font-size:2.5rem;line-height:1.2}.cup .num{font-size:.9rem}
+.cup:disabled{opacity:1}.cup.win{background:#fff1bd;border-color:#e6b32f;border-bottom-color:#bd8911;color:#704c00}.cup.miss{background:#eef1f5;border-color:#d2d7e0;border-bottom-color:#c3c9d3;color:#697386}
+.result{text-align:center;font-size:1.12rem;font-weight:850;padding:12px;border-radius:12px;background:#f4f6fb;margin-top:14px;min-height:50px}
+.result.good{background:#e1f7e9;color:#12683b}.result.bad{background:#fff0f0;color:#a52234}
+.pill{background:#eef2ff;color:#2946a4;border-radius:999px;padding:7px 10px;font-size:.85rem;font-weight:800}
+footer{text-align:center;padding:8px 18px 24px;color:#667188;font-size:.8rem}
+@media(min-width:520px){.cups{grid-template-columns:repeat(5,minmax(0,1fr))}.cup{min-height:120px}}
+</style></head>
+<body>
+<header><div class="mark">🎁</div><h1>DESAFIO DOS COPOS</h1><p>Escolha um copo. Será que você encontra o prêmio?</p></header>
+<main>
+<section class="panel">
+ <div class="fields">
+  <div><label for="quantity">Quantidade de copos</label><input id="quantity" type="number" min="2" max="30" value="10"></div>
+  <div><label for="prizeCount">Copos premiados</label><input id="prizeCount" type="number" min="1" max="30" value="1"></div>
+ </div>
+ <button class="primary" id="prepare">🎲 Embaralhar e começar</button>
+ <p class="hint">Os prêmios são escondidos aleatoriamente. Entregue o celular ao participante e deixe que ele toque em um copo para tentar ganhar.</p>
+</section>
+<section class="panel">
+ <div class="bar"><strong>👆 Escolha o seu copo!</strong><span class="pill" id="counter">Aguardando início</span></div>
+ <div class="status" id="status" aria-live="polite">Toque em “Embaralhar e começar” para preparar a rodada.</div>
+ <div class="cups" id="cups"></div>
+ <div class="result" id="result" aria-live="polite">🍀 Boa sorte!</div>
+ <button class="primary" id="next" style="display:none">🔄 Nova rodada</button>
+</section>
+</main>
+<footer>Desafio dos Copos • Sorteio aleatório realizado no aparelho</footer>
+<script>
+const $=id=>document.getElementById(id);let cups=[],turns=0,found=0,active=false,prizeTotal=1;
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function prepare(){
+ const n=Number($('quantity').value),p=Number($('prizeCount').value);
+ if(!Number.isInteger(n)||n<2||n>30){alert('Escolha de 2 a 30 copos.');return}
+ if(!Number.isInteger(p)||p<1||p>n){alert('Os copos premiados devem ser de 1 até a quantidade de copos.');return}
+ prizeTotal=p;turns=0;found=0;active=true;
+ cups=shuffle(Array.from({length:n},(_,i)=>({number:i+1,prize:i<p,revealed:false})));
+ $('next').style.display='none';$('result').className='result';$('result').textContent='🍀 Boa sorte! Escolha com atenção.';draw();
+ $('status').textContent='Sua vez! Toque em um dos copos abaixo.';$('counter').textContent=`0 de ${n} escolhidos`;
+}
+function draw(){
+ const board=$('cups');board.innerHTML='';
+ cups.forEach(c=>{
+  const b=document.createElement('button');b.className='cup'+(c.revealed?(c.prize?' win':' miss'):'');b.disabled=c.revealed||!active;
+  const e=document.createElement('span');e.className='emoji';e.textContent=c.revealed?(c.prize?'🎉':'😕'):'🥤';
+  const num=document.createElement('span');num.className='num';num.textContent=c.revealed?(c.prize?'VOCÊ GANHOU!':'Tente outra vez'):`Copo ${c.number}`;
+  b.append(e,num);b.addEventListener('click',()=>choose(c.number));board.appendChild(b);
+ });
+}
+function choose(num){
+ if(!active)return;const c=cups.find(x=>x.number===num);if(!c||c.revealed)return;
+ c.revealed=true;turns++;if(c.prize)found++;draw();
+ $('counter').textContent=`${turns} de ${cups.length} escolhidos`;
+ if(c.prize){$('result').className='result good';$('result').textContent='🎊 PARABÉNS! VOCÊ ACERTOU E GANHOU!';}
+ else{$('result').className='result bad';$('result').textContent='😅 Não foi dessa vez! Esse copo não tem prêmio.';}
+ const remaining=cups.length-turns;
+ if(remaining===0||found===prizeTotal){
+  active=false;draw();$('next').style.display='block';
+  $('status').textContent=found===prizeTotal?'Todos os prêmios foram encontrados!':'Fim da rodada!';
+  if(found===prizeTotal)$('result').textContent+=` Prêmios encontrados: ${found}.`;
+  else $('result').textContent='🏁 Rodada encerrada! Toque em “Nova rodada” para embaralhar de novo.';
+ }else{$('status').textContent=`${remaining} copo(s) ainda fechado(s). Continue escolhendo!`;}
+}
+$('prepare').addEventListener('click',prepare);$('next').addEventListener('click',prepare);
+</script></body></html>
